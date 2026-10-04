@@ -14,6 +14,53 @@ The business-relevant question is complete mission success: finding all targets 
 
 This is a controlled software experiment, not a deployable rescue robot or a validated human detector. Its targets and sensing are synthetic. It does not establish a neuromorphic energy advantage, biological compatibility, or continuous multiscale semantic understanding.
 
+## Results: completed pilot experiment
+
+The completed 3 October 2026 run evaluated **24 trained networks plus a classical controller over 1,200 episodes**. Training used an RTX 4070; closed-loop evaluation ran on CPU. These are measured simulation outcomes, not projected hardware performance.
+
+**Complete success means finding all three real targets AND returning to the true base within the action budget.** Each neural entry below pools eight held-out layouts and three training seeds (24 episodes). The classical controller has eight episodes per condition, without duplication over training seeds.
+
+| Model | Nominal | Missing readings | False readings | Pose drift | Combined errors | Rotated coordinates |
+|---|---:|---:|---:|---:|---:|---:|
+| Classical controller | 7/8 | 6/8 | 2/8 | 0/8 | 0/8 | 7/8 |
+| Conventional + feed-forward | 11/24 | 9/24 | 4/24 | 0/24 | 0/24 | 10/24 |
+| Conventional + GRU | 16/24 | 7/24 | 1/24 | 1/24 | 1/24 | 19/24 |
+| Conventional + reservoir | 10/24 | 10/24 | 1/24 | 1/24 | 1/24 | 13/24 |
+| Conventional + spiking | 17/24 | 6/24 | 1/24 | 0/24 | 0/24 | 17/24 |
+| Geometric + feed-forward | 16/24 | 11/24 | 2/24 | 0/24 | 0/24 | 16/24 |
+| **Geometric + GRU** | **24/24** | **20/24** | **6/24** | 1/24 | 0/24 | **24/24** |
+| Geometric + reservoir | 22/24 | 10/24 | 4/24 | 0/24 | 0/24 | 22/24 |
+| **Geometric + spiking** | **24/24** | 15/24 | 5/24 | 0/24 | 1/24 | **24/24** |
+
+“False readings” is the synthetic `multipath` profile; “rotated” applies a consistent coordinate rotation to neural inputs, not a physical change in robot attitude. Conventional and geometric models both received rotation augmentation during training.
+
+### What the results mean
+
+- **Geometry plus memory was promising in this pilot.** Geometric GRU and spiking models completed all nominal missions. The geometric GRU retained 83.3% completion with missing readings, versus 62.5% for geometric spiking and 75% for the classical controller.
+- **Localization was the critical failure.** Under pose drift, the geometric GRU found 64 of 72 targets but returned in only 1 of 24 missions. The geometric spiking model found 66 of 72 targets but returned in none. Better detection alone did not solve navigation.
+- **Memory contributed on identical observation histories.** Resetting geometric GRU state at every observation increased delayed-cue direction mean squared error from 0.1686 to 0.3350; for geometric spiking, from 0.2186 to 0.3513. These are prediction diagnostics, not mission-success percentages.
+- **No neuromorphic energy claim follows.** Spiking dynamics were simulated, but hardware power was not measured. Floating-point rounding can also change spike decisions.
+
+### Nominal mission efficiency
+
+Actions include movement and listening. Means below include every nominal episode, including missions that missed targets; compare action counts alongside success, not in isolation.
+
+| Model | Real targets found | Returned home | Mean actions |
+|---|---:|---:|---:|
+| Classical controller | 23/24 | 8/8 | 155.9 |
+| Conventional + feed-forward | 51/72 | 24/24 | 289.3 |
+| Conventional + GRU | 64/72 | 24/24 | 252.9 |
+| Conventional + reservoir | 52/72 | 24/24 | 284.2 |
+| Conventional + spiking | 64/72 | 24/24 | 249.3 |
+| Geometric + feed-forward | 63/72 | 24/24 | 225.1 |
+| Geometric + GRU | 72/72 | 24/24 | 93.4 |
+| Geometric + reservoir | 70/72 | 24/24 | 187.4 |
+| Geometric + spiking | 72/72 | 24/24 | 116.0 |
+
+**Evidence limits:** there are only eight distinct test layouts, reused across architectures and training seeds. These counts do not establish population-level superiority or a general architecture ranking. All models share a mapper/planner; storage and state caps are matched, but computation and total RAM are not exactly equal. The geometric representation does not implement continuum feature hierarchies or renormalization equivariance.
+
+These summaries were checked against the retained local per-episode evaluation records and trace audits. Raw records and checkpoints are not bundled in this repository; the reproduction commands below generate them. Backend/version differences can change individual trajectories.
+
 ## Run a simulation immediately
 
 Use Python 3.11. The default demo runs on CPU and needs no training or downloaded weights.
